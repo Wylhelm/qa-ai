@@ -11,14 +11,14 @@ class Database:
         cursor = self.conn.cursor()
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS scenarios
-            (id INTEGER PRIMARY KEY, name TEXT, criteria TEXT, scenario TEXT, processed_files TEXT, ui_elements TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)
+            (id INTEGER PRIMARY KEY, name TEXT, criteria TEXT, scenario TEXT, processed_files TEXT, ui_elements TEXT, timestamp DATETIME DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')))
         ''')
         self.conn.commit()
 
     def save_scenario(self, test_scenario):
         cursor = self.conn.cursor()
         processed_files_json = json.dumps([{k: v for k, v in file.items() if k != 'image_data'} for file in test_scenario.processed_files])
-        cursor.execute('INSERT INTO scenarios (name, criteria, scenario, processed_files, ui_elements, timestamp) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)', 
+        cursor.execute('INSERT INTO scenarios (name, criteria, scenario, processed_files, ui_elements) VALUES (?, ?, ?, ?, ?)', 
                        (test_scenario.name, test_scenario.criteria, test_scenario.scenario_text, processed_files_json, json.dumps(test_scenario.ui_elements)))
         self.conn.commit()
 

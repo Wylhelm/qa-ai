@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QPushButton, QTextEdit, QFileDialog, QLabel, QListWidget, QHBoxLayout, QScrollArea, QGridLayout, QLineEdit, QMessageBox, QInputDialog
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt, QSize
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import json
 from test_scenario import TestScenario
@@ -204,9 +204,12 @@ class MainWindow(QMainWindow):
         scenarios = self.database.get_scenarios()
         for scenario_name, timestamp in scenarios:
             try:
-                # Try to parse the timestamp string into a datetime object
-                datetime_obj = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-                formatted_time = datetime_obj.strftime("%Y-%m-%d %H:%M:%S")
+                # Parse the UTC timestamp
+                utc_time = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+                utc_time = utc_time.replace(tzinfo=timezone.utc)
+                # Convert to local time
+                local_time = utc_time.astimezone()
+                formatted_time = local_time.strftime("%Y-%m-%d %H:%M:%S")
             except ValueError:
                 # If parsing fails, use the timestamp string as is
                 formatted_time = timestamp
