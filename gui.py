@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QPushButton, QTex
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt, QSize
 import os
+import json
 from test_scenario import TestScenario
 from system_prompt_window import SystemPromptWindow
 from context_window_window import ContextWindowWindow
@@ -200,30 +201,25 @@ class MainWindow(QMainWindow):
     def load_scenario_history(self):
         self.history_list.clear()
         scenarios = self.database.get_scenarios()
-        for scenario in scenarios:
-            # Use the scenario name as the main identifier
-            scenario_name = scenario.name
-            # Get the first line of the criteria
-            first_line = scenario.criteria.split('\n')[0].strip()
-            # Truncate if it's too long
-            criteria_summary = (first_line[:30] + '...') if len(first_line) > 30 else first_line
-            self.history_list.addItem(f"{scenario_name} - Criteria: {criteria_summary}")
+        for scenario_name, timestamp in scenarios:
+            formatted_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            self.history_list.addItem(f"{scenario_name} - Created: {formatted_time}")
 
     def display_scenario(self, item):
         scenario_name = item.text().split(" - ", 1)[0].strip()
-        scenarios = self.database.get_scenarios()
-        matching_scenario = next((s for s in scenarios if s.name == scenario_name), None)
-        if matching_scenario:
-            self.scenario_name_input.setText(matching_scenario.name)
-            self.scenario_output.setPlainText(matching_scenario.scenario_text)
-            self.criteria_input.setPlainText(matching_scenario.criteria)
-            self.processed_files = matching_scenario.processed_files
+        cursor = self.database.conn.cursor()
+        cursor.execute('SELECT * FROM scenarios WHERE name = ?', (scenario_name,))
+        row = cursor.fetchone()
+        if row:
+            self.scenario_name_input.setText(row[1])  # name
+            self.criteria_input.setPlainText(row[2])  # criteria
+            self.scenario_output.setPlainText(row[3])  # scenario
+            self.processed_files = json.loads(row[4])  # processed_files
         else:
             self.scenario_output.setPlainText("Scenario not found.")
             self.scenario_name_input.clear()
             self.criteria_input.clear()
             self.processed_files = []
-            self.update_thumbnails()
 
     def clear_scenario_history(self):
         reply = QMessageBox.question(self, 'Clear History', 'Are you sure you want to clear the scenario history? This will delete all stored data.', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)

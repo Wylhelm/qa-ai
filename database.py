@@ -18,15 +18,14 @@ class Database:
     def save_scenario(self, test_scenario):
         cursor = self.conn.cursor()
         processed_files_json = json.dumps([{k: v for k, v in file.items() if k != 'image_data'} for file in test_scenario.processed_files])
-        cursor.execute('INSERT INTO scenarios (name, criteria, scenario, processed_files, ui_elements) VALUES (?, ?, ?, ?, ?)', 
+        cursor.execute('INSERT INTO scenarios (name, criteria, scenario, processed_files, ui_elements, timestamp) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)', 
                        (test_scenario.name, test_scenario.criteria, test_scenario.scenario_text, processed_files_json, json.dumps(test_scenario.ui_elements)))
         self.conn.commit()
 
     def get_scenarios(self):
         cursor = self.conn.cursor()
-        cursor.execute('SELECT * FROM scenarios ORDER BY timestamp DESC')
-        rows = cursor.fetchall()
-        return [TestScenario(row[1], row[2], row[3], json.loads(row[4])) for row in rows]
+        cursor.execute('SELECT name, timestamp FROM scenarios ORDER BY timestamp DESC')
+        return cursor.fetchall()
 
     def clear_history(self):
         cursor = self.conn.cursor()
